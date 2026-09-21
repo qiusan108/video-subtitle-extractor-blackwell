@@ -6,6 +6,15 @@ This is an NVIDIA Blackwell / RTX 50-series optimized derivative of [YaoFANGUK/v
 
 It keeps the same core purpose: extracting hard-coded subtitles from video and generating SRT/TXT files. This edition mainly rebuilds the Windows + NVIDIA automatic-mode pipeline so RTX 50-series GPUs can use CUDA/NVDEC, fixed-rate sampling, and OCR micro-batching instead of falling back to the older slow path.
 
+## Supported GPUs and use cases
+
+This project targets **hardcoded subtitle extraction, video subtitle OCR, and batch SRT generation** on Windows with NVIDIA GPUs.
+
+- General support target: GeForce RTX 5050, 5060, 5060 Ti, 5070, 5070 Ti, 5080, 5090, and their Laptop GPU variants.
+- Runtime selection is based on NVIDIA CUDA, FFmpeg NVDEC/CUVID, and codec capabilities rather than hard-coded GPU names.
+- Physically verified hardware: RTX 5060 8 GB. Community results for other RTX 50 models are welcome.
+- Core technologies: NVIDIA Blackwell, CUDA, NVDEC, FFmpeg, PaddlePaddle, PaddleOCR, and PP-OCRv5.
+
 <p align="center"><img src="design/demo.png" alt="VSE screenshot"/></p>
 
 ## What changed

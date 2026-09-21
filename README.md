@@ -6,6 +6,15 @@
 
 它仍然做同一件事：从视频中的硬字幕提取文字并生成 SRT/TXT；本版本主要重做了 Windows + NVIDIA GPU 的自动模式链路，让 RTX 50 系列能够使用 CUDA/NVDEC、固定频率采样和 OCR 微批处理，而不是退回较慢的旧路径。
 
+## 支持的显卡与适用场景
+
+本项目适合在 Windows 上进行**视频硬字幕提取、视频字幕 OCR、批量 SRT 生成**，英文场景通常也称为 *hardcoded subtitle extraction* 或 *GPU-accelerated video OCR*。
+
+- 通用支持目标：GeForce RTX 5050、5060、5060 Ti、5070、5070 Ti、5080、5090 及相应 Laptop GPU。
+- 实际启用方式：检测 NVIDIA CUDA、FFmpeg NVDEC/CUVID 和视频编码能力，而不是依赖固定显卡名称。
+- 已真机验证：RTX 5060 8 GB；其他 RTX 50 型号欢迎提交测试结果。
+- 核心技术：NVIDIA Blackwell、CUDA、NVDEC、FFmpeg、PaddlePaddle、PaddleOCR、PP-OCRv5。
+
 <p align="center"><img src="design/demo.png" alt="VSE screenshot"/></p>
 
 ## 本版本改了什么
