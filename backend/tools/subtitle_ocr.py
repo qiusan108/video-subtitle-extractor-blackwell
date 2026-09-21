@@ -16,13 +16,16 @@ from concurrent.futures import ThreadPoolExecutor
 import queue
 from types import SimpleNamespace
 import shutil
-import glob
 import numpy as np
 from collections import namedtuple, deque
 from backend.config import tr
 from backend.tools.nvidia_video import (
     parse_cuvid_decoders,
     select_cuvid_decoder,
+)
+from backend.tools.ffmpeg_utils import (
+    resolve_ffmpeg_path,
+    subprocess_creation_flags,
 )
 
 TURBO_BLANK_MARKER = '__VSE_TURBO_BLANK__'
@@ -55,9 +58,7 @@ DECODE_COLLECT_WAIT_SECONDS = max(
 
 def _subprocess_creation_flags():
     """Keep helper FFmpeg/FFprobe windows hidden on Windows."""
-    if os.name == 'nt' and hasattr(subprocess, 'CREATE_NO_WINDOW'):
-        return subprocess.CREATE_NO_WINDOW
-    return 0
+    return subprocess_creation_flags()
 
 
 def _resolve_ffmpeg_path():
@@ -68,47 +69,7 @@ def _resolve_ffmpeg_path():
     variable may not be visible until Explorer or Windows is restarted.  Search
     project-local, sibling, PATH, and common Windows FFmpeg locations.
     """
-    configured = os.environ.get('VSE_FFMPEG_PATH', '').strip().strip('"')
-    candidates = [
-        configured,
-        shutil.which('ffmpeg'),
-        shutil.which('ffmpeg.exe'),
-    ]
-    for candidate in candidates:
-        if candidate and os.path.isfile(candidate):
-            return os.path.abspath(candidate)
-
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__)
-    )))
-    ai_root = os.path.dirname(project_root)
-    search_roots = [
-        os.path.join(project_root, 'ffmpeg'),
-        os.path.join(ai_root, 'ffmpeg'),
-    ]
-    if os.name == 'nt':
-        search_roots.extend([
-            os.path.join(os.environ.get('ProgramFiles', ''), 'ffmpeg'),
-            r'C:\ffmpeg',
-            r'D:\ffmpeg',
-        ])
-
-    for search_root in search_roots:
-        if not os.path.isdir(search_root):
-            continue
-        matches = sorted(glob.glob(
-            os.path.join(search_root, '**', 'ffmpeg.exe'),
-            recursive=True,
-        ))
-        if matches:
-            resolved = os.path.abspath(matches[0])
-            print(f'VSE auto-discovered FFmpeg: {resolved}')
-            return resolved
-
-    raise RuntimeError(
-        'FFmpeg was not found. Set VSE_FFMPEG_PATH to ffmpeg.exe '
-        'or place FFmpeg in the project or a sibling ffmpeg directory.'
-    )
+    return resolve_ffmpeg_path()
 
 
 def _probe_cuvid_decoder(ffmpeg_path, video_path):

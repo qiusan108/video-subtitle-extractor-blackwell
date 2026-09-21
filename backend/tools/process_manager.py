@@ -70,6 +70,8 @@ class ProcessManager:
     
     def terminate_all(self):
         """并发终止所有管理的进程"""
+        if not self.processes:
+            return
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
             for process_id, process in list(self.processes.items()):

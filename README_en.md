@@ -88,6 +88,19 @@ Launch:
 
 FFmpeg may be available through PATH, an `ffmpeg` directory inside or next to the project, or through `VSE_FFMPEG_PATH`.
 
+## Burn subtitles into video
+
+Open **Burn Subtitles** in the left navigation, then choose an input video, an SRT/ASS subtitle, and an output path. The feature renders subtitles permanently with FFmpeg's `subtitles`/libass filter and remains independent from the existing extraction pipeline.
+
+- SRT is converted to ASS in an isolated temporary directory. Font, size, bottom margin, outline, shadow, and text color are configurable.
+- ASS keeps its embedded fonts, positions, colors, and effects; the SRT style controls do not override an ASS file.
+- Auto performs a real one-frame NVENC probe and prefers `h264_nvenc` when usable, otherwise `libx264`. `libx264`, `libx265`, `h264_nvenc`, and `hevc_nvenc` can also be selected explicitly.
+- The quality value maps to CRF for CPU encoders and CQ for NVIDIA encoders. Lower values generally mean higher quality and larger files.
+- Audio is stream-copied by default and automatically retries as AAC 192 kbps when the output container cannot accept the source audio codec.
+- Progress and cancellation are supported. Input/output paths and font names may contain Unicode, spaces, and common special characters; on Windows the subtitle filter uses an isolated temporary working directory to avoid path escaping problems.
+
+FFmpeg must include libass (`ffmpeg -filters` should list `subtitles`). Burning subtitles re-encodes video, so output quality and speed depend on the selected encoder and quality value.
+
 ## Recommended starting point
 
 - Mode: Automatic

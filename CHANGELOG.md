@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a Burn Subtitles page for rendering SRT/ASS subtitles into video with FFmpeg/libass.
+- Added automatic NVENC probing, CPU/NVIDIA H.264 and H.265 encoders, audio stream-copy with AAC fallback, progress, cancellation, and Windows-safe Unicode path handling.
 - Add a pluggable OCR backend contract while preserving PaddleOCR as default.
 - Add image-only subtitle change segmentation and a sharpness-based key-frame selector.
 - Add the opt-in Smart / Accurate pipeline without changing Auto, Fast, or legacy Accurate behavior.

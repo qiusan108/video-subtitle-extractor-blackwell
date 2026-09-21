@@ -88,6 +88,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\diagnose.ps1
 
 FFmpeg 可以位于 PATH、项目内或相邻的 `ffmpeg` 目录，也可以通过 `VSE_FFMPEG_PATH` 指定。
 
+## 字幕烧录到视频
+
+左侧打开 **字幕烧录**，选择输入视频、SRT/ASS 字幕和输出路径即可把字幕永久渲染到画面中。该功能使用 FFmpeg 的 `subtitles`/libass 滤镜，本机完成处理，不影响原有字幕提取流程。
+
+- SRT 会先在临时目录转换为 ASS，可设置字体、字号、底部边距、描边、阴影和文字颜色。
+- ASS 会保留文件已有的字体、位置、颜色和特效，因此界面的 SRT 样式选项不会覆盖 ASS 样式。
+- “自动”编码器会实际执行一帧 NVENC 探测；可用时优先 `h264_nvenc`，否则使用 `libx264`。也可手动选择 `libx264`、`libx265`、`h264_nvenc` 或 `hevc_nvenc`。
+- 质量值同时用于 CPU 的 CRF 和 NVIDIA 的 CQ；数值越低，画质和文件大小通常越高。
+- 音频默认直接复制；输出封装不兼容源音频时，会自动改用 AAC 192 kbps。
+- 支持进度显示和取消。输入/输出路径和字体名可包含中文、空格及常见特殊字符；Windows 下字幕滤镜使用隔离的临时工作目录，避免路径转义问题。
+
+FFmpeg 必须包含 libass（`ffmpeg -filters` 中应出现 `subtitles`）。烧录会重新编码视频，因此输出画质和速度取决于所选编码器与质量值。
+
 ## 推荐起点
 
 - 模式：自动

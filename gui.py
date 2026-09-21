@@ -28,6 +28,7 @@ from backend.tools.process_manager import ProcessManager
 from ui.advanced_setting_interface import AdvancedSettingInterface
 from ui.home_interface import HomeInterface
 from ui.timeline_sync_interface import TimelineSyncInterface
+from ui.burn_subtitles_interface import BurnSubtitlesInterface, burn_text
 
 
 class SubtitleExtractorGUI(FluentWindow): 
@@ -79,12 +80,15 @@ class SubtitleExtractorGUI(FluentWindow):
         self.homeInterface.setObjectName("HomeInterface")
         self.timelineSyncInterface = TimelineSyncInterface(self)
         self.timelineSyncInterface.setObjectName("TimelineSyncInterface")
+        self.burnSubtitlesInterface = BurnSubtitlesInterface(self)
+        self.burnSubtitlesInterface.setObjectName("BurnSubtitlesInterface")
         self.advancedSettingInterface = AdvancedSettingInterface(self)
         self.advancedSettingInterface.setObjectName("AdvancedSettingInterface")
         
         # 添加到主窗口作为子界面
         self.addSubInterface(self.homeInterface,FluentIcon.HOME, tr['SubtitleExtractorGUI']['Title'])
         self.addSubInterface(self.timelineSyncInterface,FluentIcon.FONT, tr['TimelineSync']['Title'])
+        self.addSubInterface(self.burnSubtitlesInterface, FluentIcon.MOVIE, burn_text('Title', 'Burn Subtitles'))
         self.addSubInterface(self.advancedSettingInterface, FluentIcon.SETTING, tr['Setting']['AdvancedSetting'], NavigationItemPosition.BOTTOM)
 
     def switchTo(self, interface: QWidget):

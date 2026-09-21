@@ -29,6 +29,9 @@ jobs:
           backend/tools/subtitle_segmenter.py
           backend/tools/subtitle_ocr.py
           backend/tools/subtitle_detect.py
+          backend/tools/subtitle_burner.py
+          backend/tools/ffmpeg_utils.py
           backend/tools/nvidia_video.py
+          ui/burn_subtitles_interface.py
       - name: Run dependency-free compatibility tests
         run: python -m unittest discover -s tests -p "test_*.py"
