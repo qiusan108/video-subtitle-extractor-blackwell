@@ -2,13 +2,13 @@
 
 # Video Subtitle Extractor — Blackwell Edition
 
-这是 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0 的 NVIDIA Blackwell / RTX 50 系列优化分支。
+这是基于 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0 开发的 NVIDIA Blackwell / RTX 50 系列独立开源版本。
 
-它仍然做同一件事：从视频中的硬字幕提取文字并生成 SRT/TXT；这个分支主要重做了 Windows + NVIDIA GPU 的自动模式链路，让 RTX 50 系列能够使用 CUDA/NVDEC、固定频率采样和 OCR 微批处理，而不是退回较慢的旧路径。
+它仍然做同一件事：从视频中的硬字幕提取文字并生成 SRT/TXT；本版本主要重做了 Windows + NVIDIA GPU 的自动模式链路，让 RTX 50 系列能够使用 CUDA/NVDEC、固定频率采样和 OCR 微批处理，而不是退回较慢的旧路径。
 
 <p align="center"><img src="design/demo.png" alt="VSE screenshot"/></p>
 
-## 这个分支改了什么
+## 本版本改了什么
 
 - RTX 50 系列按实际 CUDA、FFmpeg 和视频编码能力检测，不把逻辑写死到某一个显卡型号。
 - 自动模式使用 **FFmpeg NVDEC + 2 fps 固定采样 + 字幕区域裁剪 + PP-OCRv5 mobile 检测 + server 识别**。
