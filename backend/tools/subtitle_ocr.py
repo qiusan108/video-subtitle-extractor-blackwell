@@ -6,7 +6,8 @@ from multiprocessing import Queue, Process
 import cv2
 from PIL import ImageFont, ImageDraw, Image
 from tqdm import tqdm
-from backend.tools.ocr import OcrRecogniser, get_coordinates
+from backend.tools.ocr import get_coordinates
+from backend.tools.ocr_backend import create_ocr_backend
 from backend.tools.constant import SubtitleArea
 from backend.tools import constant
 from threading import Thread
@@ -1270,13 +1271,15 @@ def subtitle_extract_handler(task_queue, progress_queue, video_path, raw_subtitl
     # 8 GB card.  Auto/fast are the modes where two child predictors can fill
     # each other's preprocessing and postprocessing gaps.
     requested_workers = (
-        1 if getattr(options, 'MODE', None) == 'accurate' else OCR_WORKERS
+        1 if getattr(options, 'MODE', None) in ('accurate', 'smart')
+        else OCR_WORKERS
     )
     recognisers = []
     model_init_started = time.perf_counter()
     for worker_id in range(requested_workers):
-        recogniser = OcrRecogniser()
-        recogniser.hardware_accelerator = options.HARDWARD_ACCELERATOR
+        recogniser = create_ocr_backend()
+        if hasattr(recogniser, 'hardware_accelerator'):
+            recogniser.hardware_accelerator = options.HARDWARD_ACCELERATOR
         try:
             recogniser.prepare()
             recognisers.append(recogniser)

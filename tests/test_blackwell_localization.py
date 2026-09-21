@@ -29,6 +29,7 @@ class BlackwellLocalizationTests(unittest.TestCase):
                 self.assertTrue(section["InterfaceLanguageDesc"])
                 self.assertTrue(section["RestartUpdatedTitle"])
                 self.assertTrue(section["RestartRequiredDesc"])
+                self.assertTrue(parser["Mode"]["Smart"])
 
     def test_readmes_link_to_each_other(self):
         chinese = (ROOT / "README.md").read_text(encoding="utf-8")

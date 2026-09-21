@@ -5,6 +5,7 @@ from backend.config import *
 import importlib
 from paddleocr import PaddleOCR
 from backend.tools.hardware_accelerator import HardwareAccelerator
+from backend.tools.ocr_backend import OcrBackend
 from backend.tools.paddle_model_config import PaddleModelConfig
 
 
@@ -50,7 +51,11 @@ def resolve_ocr_model_selection(model_config):
 
 
 # 加载文本检测+识别模型
-class OcrRecogniser:
+class PaddleOcrBackend(OcrBackend):
+    """Existing PP-OCRv5 implementation behind the backend contract."""
+
+    name = 'paddle'
+
     def __init__(self):
         self.recogniser = None
         # Reuse the initialized singleton.  Creating HardwareAccelerator()
@@ -231,6 +236,10 @@ class OcrRecogniser:
                     'using original server detector'
                 )
         return PaddleOCR(**kwargs)
+
+
+# Backwards-compatible public name used by third-party callers and older code.
+OcrRecogniser = PaddleOcrBackend
 
 
 def get_coordinates(dt_box):

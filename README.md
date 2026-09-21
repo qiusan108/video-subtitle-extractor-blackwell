@@ -21,6 +21,8 @@
 
 - RTX 50 系列按实际 CUDA、FFmpeg 和视频编码能力检测，不把逻辑写死到某一个显卡型号。
 - 自动模式使用 **FFmpeg NVDEC + 2 fps 固定采样 + 字幕区域裁剪 + PP-OCRv5 mobile 检测 + server 识别**。
+- 新增 **智能 / 精准（Smart）模式**：字幕区域图像变化负责切时间轴，每段只选择最清晰关键帧进行 OCR；时间轴检测不再依赖 OCR 文本。
+- OCR 调用已抽象为 backend 接口；现阶段默认且内置的 backend 仍是原有 PP-OCRv5/PaddleOCR。
 - 默认使用 2 个 OCR 引擎、每引擎 Batch 8；第二个引擎显存不足时会自动回退到单引擎。
 - NVDEC 对当前编码不可用时会回退到 OpenCV 采样路径。
 - 支持 H.264、HEVC、AV1、VP8/VP9、MPEG、VC-1、MJPEG 等可由本机 FFmpeg/CUVID 提供的解码器。
@@ -95,12 +97,22 @@ FFmpeg 可以位于 PATH、项目内或相邻的 `ffmpeg` 目录，也可以通�
 - OCR 引擎：2
 - Batch：8
 
+需要更准的字幕起止时间时，可改用“智能 / 精准”模式。该模式必须先框选尽量窄且准确的字幕区域。原有自动、快速和精准模式均保留原行为；Smart 是第一阶段实现，目前每段选择一个最清晰关键帧，尚未加入多帧投票。
+
 如果要对比 server 检测器，可在当前命令行会话中运行：
 
 ```powershell
 set VSE_AUTO_MOBILE_DET=0
 .\open.bat
 ```
+
+Smart 模式可通过以下环境变量微调；不设置时使用括号内默认值：
+
+- `VSE_SMART_SCAN_FPS`：每秒分析的字幕区域帧数（`8`）
+- `VSE_SMART_CHANGE_THRESHOLD`：画面变化切段阈值（`0.08`，越小越敏感）
+- `VSE_SMART_MIN_EDGE_DENSITY`：判定区域存在字幕的最小边缘密度（`0.004`）
+- `VSE_SMART_MIN_SEGMENT_MS`：允许切出的最短字幕段（`250` 毫秒）
+- `VSE_OCR_BACKEND`：OCR backend 名称（当前内置值为 `paddle`）
 
 ## 质量与兼容性边界
 

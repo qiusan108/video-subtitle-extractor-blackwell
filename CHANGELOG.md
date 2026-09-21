@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add a pluggable OCR backend contract while preserving PaddleOCR as default.
+- Add image-only subtitle change segmentation and a sharpness-based key-frame selector.
+- Add the opt-in Smart / Accurate pipeline without changing Auto, Fast, or legacy Accurate behavior.
+- Add unit tests and configuration documentation for the new pipeline.
+
 ## 0.1.2
 
 - 将公开仓库改为轻量源码分发，不再重复提交约 928 MB 的上游模型、原生组件、演示与测试媒体。

@@ -21,6 +21,8 @@ This project targets **hardcoded subtitle extraction, video subtitle OCR, and ba
 
 - RTX 50-series support is selected by actual CUDA, FFmpeg, and codec capability instead of a hard-coded GPU model name.
 - Automatic mode uses **FFmpeg NVDEC + fixed 2 fps sampling + subtitle-region cropping + PP-OCRv5 mobile detection + server recognition**.
+- A new **Smart / Accurate mode** detects timeline changes from subtitle-region images and sends only the sharpest key frame in each segment to OCR, keeping timing detection independent from recognised text.
+- OCR calls now use a backend interface; the existing PP-OCRv5/PaddleOCR implementation remains the built-in default.
 - Two OCR engines with Batch 8 are used by default; initialization safely falls back to one engine when VRAM is insufficient.
 - NVDEC falls back to the OpenCV sampling path when the current codec cannot be decoded by the installed FFmpeg build.
 - H.264, HEVC, AV1, VP8/VP9, MPEG, VC-1, and MJPEG CUVID decoders are selected when available.
@@ -95,12 +97,22 @@ FFmpeg may be available through PATH, an `ffmpeg` directory inside or next to th
 - OCR engines: 2
 - Batch: 8
 
+Choose Smart / Accurate when subtitle boundary precision matters more than maximum throughput. Draw a narrow, accurate subtitle region first. Automatic, Fast, and the legacy Accurate mode retain their previous behavior. Smart is the first-stage implementation and currently selects one sharp key frame per segment; multi-frame voting is planned for the next phase.
+
 To compare with the server detector in the current terminal session:
 
 ```powershell
 set VSE_AUTO_MOBILE_DET=0
 .\open.bat
 ```
+
+Smart mode can be tuned with these optional environment variables (defaults in parentheses):
+
+- `VSE_SMART_SCAN_FPS`: subtitle-region analyses per second (`8`)
+- `VSE_SMART_CHANGE_THRESHOLD`: visual change threshold (`0.08`; lower is more sensitive)
+- `VSE_SMART_MIN_EDGE_DENSITY`: minimum edge density treated as subtitle content (`0.004`)
+- `VSE_SMART_MIN_SEGMENT_MS`: shortest allowed segment (`250` ms)
+- `VSE_OCR_BACKEND`: OCR backend name (currently built-in: `paddle`)
 
 ## Quality and compatibility boundary
 

@@ -22,7 +22,11 @@ jobs:
         run: >-
           python -m py_compile
           backend/main.py
+          backend/tools/ocr_backend.py
           backend/tools/ocr.py
+          backend/tools/keyframe_selector.py
+          backend/tools/smart_pipeline.py
+          backend/tools/subtitle_segmenter.py
           backend/tools/subtitle_ocr.py
           backend/tools/subtitle_detect.py
           backend/tools/nvidia_video.py

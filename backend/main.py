@@ -27,14 +27,18 @@ from backend.config import *
 from backend.tools.hardware_accelerator import HardwareAccelerator
 from backend.tools import reformat
 from backend.tools.ocr import (
-    OcrRecogniser,
     get_coordinates,
     resolve_ocr_model_selection,
 )
+from backend.tools.ocr_backend import create_ocr_backend
 from backend.tools import subtitle_ocr
 from backend.tools.paddle_model_config import PaddleModelConfig
 from backend.tools.process_manager import ProcessManager
 from backend.tools.subtitle_detect import SubtitleDetect
+from backend.tools.smart_pipeline import (
+    SmartPipelineConfig,
+    SmartSubtitleScanner,
+)
 from backend.bean.subtitle_area import SubtitleArea
 import threading
 import platform
@@ -100,6 +104,11 @@ class SubtitleExtractor:
         self.use_vsf = False
         # 极速抽样模式由OCR子进程顺序解码视频并直接提交窄条ROI。
         self.use_turbo = False
+        # Smart mode uses image changes for timing and OCRs one key frame per
+        # segment. Existing auto/fast/accurate flags and paths remain intact.
+        self.use_smart = False
+        self.smart_segments = []
+        self.smart_pipeline_config = None
         self.turbo_sample_fps = TURBO_SAMPLE_FPS
         # 定义vsf的字幕输出路径
         self.vsf_subtitle = os.path.join(self.subtitle_output_dir, 'raw_vsf.srt')
@@ -195,8 +204,10 @@ class SubtitleExtractor:
         subtitle_ocr_process = self.start_subtitle_ocr_async()
         if self.sub_area is not None:
             if platform.system() in ['Windows', 'Linux', 'Darwin']:
+                if config.mode.value == 'smart':
+                    self.extract_frame_by_smart()
                 # 使用GPU且使用accurate模式时才开放此方法：
-                if self.hardware_accelerator.has_accelerator() and config.mode.value == 'accurate':
+                elif self.hardware_accelerator.has_accelerator() and config.mode.value == 'accurate':
                     self.extract_frame_by_det()
                 elif VSE_CANDIDATE_ENGINE in (
                         'nvdec', 'ffmpeg', 'turbo', 'sampler', 'fast'):
@@ -235,7 +246,9 @@ class SubtitleExtractor:
         # 打印开始字幕生成提示
         self.append_output(tr['Main']['StartGenerateSub'])
         # 判断是否使用了vsf提取字幕
-        if self.use_vsf:
+        if self.use_smart:
+            self.generate_subtitle_file_smart()
+        elif self.use_vsf:
             # 如果使用了vsf提取字幕，则使用vsf的字幕生成方法
             self.generate_subtitle_file_vsf()
         else:
@@ -365,6 +378,49 @@ class SubtitleExtractor:
                 'single sequential decode; VideoSubFinder bypassed'
             )
 
+    def extract_frame_by_smart(self):
+        """Detect subtitle time segments without invoking OCR."""
+        self.use_vsf = False
+        self.use_turbo = False
+        self.use_smart = True
+        self.smart_pipeline_config = SmartPipelineConfig.from_environment()
+        scanner = SmartSubtitleScanner(self.smart_pipeline_config)
+        self.append_output(
+            'VSE Smart/Accurate mode: image-only timeline detection; '
+            f'{self.smart_pipeline_config.scan_fps:.1f} scans/s; '
+            'one sharp key frame per segment'
+        )
+
+        def report_progress(frame_no, total_frames):
+            self.update_progress(
+                frame_extract=frame_no / max(1, total_frames) * 100
+            )
+
+        self.smart_segments = scanner.scan(
+            self.video_cap,
+            self.fps,
+            int(self.frame_count),
+            area=self.sub_area,
+            progress=report_progress,
+        )
+        self.video_cap.release()
+        self.append_output(
+            f'VSE Smart timeline: {len(self.smart_segments)} segments; '
+            f'{len(self.smart_segments)} OCR key frames'
+        )
+        for segment in self.smart_segments:
+            total_ms = max(
+                0.0, (segment.keyframe_no - 1) / max(0.001, self.fps) * 1000
+            )
+            self.subtitle_ocr_task_queue.put((
+                self.frame_count,
+                segment.keyframe_no,
+                None,
+                None,
+                total_ms,
+                config.subtitleArea.value,
+            ))
+
     def extract_frame_by_det(self):
         """
         通过检测字幕区域位置提取字幕帧
@@ -390,7 +446,7 @@ class SubtitleExtractor:
         start_end_frame_no = []
         start_frame = None
         if self.ocr is None:
-            self.ocr = OcrRecogniser()
+            self.ocr = create_ocr_backend()
         while self.video_cap.isOpened():
             ret, frame = self.video_cap.read()
             # 如果读取视频帧失败（视频读到最后一帧）
@@ -808,6 +864,58 @@ class SubtitleExtractor:
             # 返回持续时间低于1s的字幕行
             return post_process_subtitle
 
+    def generate_subtitle_file_smart(self):
+        """Generate SRT using segment boundaries detected before OCR."""
+        self._concat_content_with_same_frameno()
+        recognised = {}
+        with open(self.raw_subtitle_path, mode='r', encoding='utf-8') as raw:
+            for line in raw:
+                parts = line.split('\t', 2)
+                if len(parts) != 3:
+                    continue
+                recognised[int(parts[0])] = parts[2].strip()
+
+        cues = []
+        scan_fps = (
+            self.smart_pipeline_config.scan_fps
+            if self.smart_pipeline_config is not None else 8.0
+        )
+        merge_gap = max(1, round(self.fps / max(0.001, scan_fps)) * 2)
+        similarity = config.thresholdTextSimilarity.value / 100.0
+        for segment in self.smart_segments:
+            text = recognised.get(segment.keyframe_no, '').strip()
+            if not text:
+                continue
+            if cues:
+                previous = cues[-1]
+                close_in_time = segment.start_frame - previous[1] <= merge_gap
+                same_text = ratio(
+                    previous[2].replace(' ', ''), text.replace(' ', '')
+                ) >= similarity
+                if close_in_time and same_text:
+                    previous[1] = max(previous[1], segment.end_frame)
+                    if len(text) > len(previous[2]):
+                        previous[2] = text
+                    continue
+            cues.append([segment.start_frame, segment.end_frame, text])
+
+        with open(self.subtitle_output_path, mode='w', encoding='utf-8') as output:
+            for index, (start_frame, end_frame, text) in enumerate(cues, 1):
+                # Segment ends are inclusive; SRT ends are exclusive.
+                end_exclusive = min(
+                    int(self.frame_count), max(start_frame + 1, end_frame + 1)
+                )
+                output.write(
+                    f'{index}\n'
+                    f'{self._frame_to_timecode(start_frame)} --> '
+                    f'{self._frame_to_timecode(end_exclusive)}\n'
+                    f'{text}\n'
+                )
+        self.append_output(tr['Main']['SubLocation'].format(
+            self.subtitle_output_path
+        ))
+        return []
+
     def generate_subtitle_file_vsf(self):
         if not self.use_vsf:
             return
@@ -1076,7 +1184,7 @@ class SubtitleExtractor:
         比较两张图片预测出的字幕区域文本是否相同
         """
         if self.ocr is None:
-            self.ocr = OcrRecogniser()
+            self.ocr = create_ocr_backend()
         if img1_no in result_cache:
             area_text1 = result_cache[img1_no]['text']
         else:
