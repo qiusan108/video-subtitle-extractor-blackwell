@@ -1,0 +1,30 @@
+name: Blackwell compatibility checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  source-checks:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile modified modules
+        run: >-
+          python -m py_compile
+          backend/main.py
+          backend/tools/ocr.py
+          backend/tools/subtitle_ocr.py
+          backend/tools/subtitle_detect.py
+          backend/tools/nvidia_video.py
+      - name: Run dependency-free compatibility tests
+        run: python -m unittest discover -s tests -p "test_*.py"

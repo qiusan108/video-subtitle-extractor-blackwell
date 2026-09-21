@@ -1,0 +1,16 @@
+VSE Blackwell Edition
+Copyright 2026 VSE Blackwell Edition contributors
+
+This product is derived from video-subtitle-extractor by YaoFANGUK and its
+contributors:
+https://github.com/YaoFANGUK/video-subtitle-extractor
+
+The upstream project and this derivative are distributed under the Apache
+License, Version 2.0. The original copyright notices and LICENSE file must be
+retained. Blackwell-specific changes include NVDEC sampling, OCR micro-batching,
+multi-engine OCR, hybrid mobile-detection/server-recognition mode, diagnostics,
+and compatibility tooling.
+
+NVIDIA, CUDA, NVDEC, GeForce, and RTX are trademarks or registered trademarks
+of NVIDIA Corporation. This project is not affiliated with or endorsed by
+NVIDIA, PaddlePaddle, PaddleOCR, or the upstream VSE maintainers.
