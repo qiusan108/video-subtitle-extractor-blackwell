@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-09-29
 
 - Add a pluggable OCR backend contract while preserving PaddleOCR as default.
 - Add image-only subtitle change segmentation and a sharpness-based key-frame selector.
-- Add the opt-in Smart / Accurate pipeline without changing Auto, Fast, or legacy Accurate behavior.
+- Add the opt-in, experimental Smart / Accurate pipeline; Auto, Fast, and legacy Accurate remain available. Smart is a separate mode, not a replacement for legacy Accurate.
 - Add unit tests and configuration documentation for the new pipeline.
+
+- Fix Smart SRT cue separators and convert its 1-based inclusive frame ranges to 0-based timestamps with exclusive ends; add regression tests.
+- Set the application version to `0.2.0` (upstream ancestry remains `2.2.0`) so the title and release update comparison use this edition's version.
+- Publish a lightweight source ZIP with `SHA256SUMS.txt`, versioned download links, and installation instructions. Runtime assets remain on-demand downloads with size and SHA-256 verification.
+- Validation boundary: existing RTX 5060 8 GB / Auto-mode hardware results are historical baseline evidence, not Smart benchmarks. Smart has source/logic checks only; no new Windows GPU end-to-end, accuracy, or performance validation is claimed. Other RTX 50 models remain unverified on physical hardware.
 
 ## 0.1.2
 

@@ -21,9 +21,9 @@ This project targets **hardcoded subtitle extraction, video subtitle OCR, and ba
 
 - RTX 50-series support is selected by actual CUDA, FFmpeg, and codec capability instead of a hard-coded GPU model name.
 - Automatic mode uses **FFmpeg NVDEC + fixed 2 fps sampling + subtitle-region cropping + PP-OCRv5 mobile detection + server recognition**.
-- A new **Smart / Accurate mode** detects timeline changes from subtitle-region images and sends only the sharpest key frame in each segment to OCR, keeping timing detection independent from recognised text.
+- A new opt-in, experimental **Smart / Accurate mode** detects timeline changes from subtitle-region images and sends only the sharpest key frame in each segment to OCR, keeping timing detection independent from recognised text.
 - OCR calls now use a backend interface; the existing PP-OCRv5/PaddleOCR implementation remains the built-in default.
-- Two OCR engines with Batch 8 are used by default; initialization safely falls back to one engine when VRAM is insufficient.
+- Auto/Fast use two OCR engines with Batch 8 by default; initialization safely falls back to one engine when VRAM is insufficient.
 - NVDEC falls back to the OpenCV sampling path when the current codec cannot be decoded by the installed FFmpeg build.
 - H.264, HEVC, AV1, VP8/VP9, MPEG, VC-1, and MJPEG CUVID decoders are selected when available.
 - All eight upstream interface languages and 87 OCR subtitle languages are retained.
@@ -31,7 +31,7 @@ This project targets **hardcoded subtitle extraction, video subtitle OCR, and ba
 
 ## Verified scope
 
-Current hardware validation baseline:
+Historical Auto-mode hardware validation baseline (not a Smart benchmark):
 
 - GeForce RTX 5060 8 GB
 - Compute Capability 12.0
@@ -43,7 +43,7 @@ Current hardware validation baseline:
 
 The best historical reference run improved from **1237.78 s to 180.66 s**, about **6.85×** faster. The cleaned-up full regression completed in **225.76 s**, still about **5.48×** faster than the original path.
 
-Latest two-hour H.264 regression:
+Previously recorded two-hour H.264 Auto-mode regression:
 
 ```text
 Source: 215,916 frames / 29.97 fps
@@ -56,6 +56,24 @@ Total time: 225.76 s
 ```
 
 These numbers only describe this test environment. GPU model, codec, resolution, subtitle region, and background load all affect performance. RTX 5050, 5060 Ti, 5070 / 5070 Ti, 5080, 5090, and Laptop GPU variants use the same capability-detection path, but they should not be described as physically verified until community hardware results are available.
+
+## Download v0.2.0
+
+- [Release notes](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.2.0-blackwell)
+- [Source ZIP](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/download/v0.2.0-blackwell/vse-v0.2.0-blackwell-source.zip)
+- [SHA256SUMS.txt](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/download/v0.2.0-blackwell/SHA256SUMS.txt)
+
+Download both files into the same folder and verify the ZIP before extracting it:
+
+```powershell
+$expected = ((Get-Content .\SHA256SUMS.txt -Raw).Trim() -split '\s+')[0]
+$actual = (Get-FileHash .\vse-v0.2.0-blackwell-source.zip -Algorithm SHA256).Hash
+if ($actual -ne $expected) { throw 'Source ZIP SHA-256 mismatch' }
+Expand-Archive .\vse-v0.2.0-blackwell-source.zip -DestinationPath .
+Set-Location .\vse-v0.2.0-blackwell
+```
+
+This is a source release, not a bundled executable or offline installer. The checksum applies to the named ZIP asset, not GitHub's separately generated “Source code” archives. It detects mismatched bytes; it is not a code-signing certificate. Install the requirements below, then run setup from the extracted folder. Existing v0.1.2 installations should download this source explicitly: their application version still reports upstream `2.2.0`, so their update check may miss this release.
 
 ## Setup
 
@@ -72,7 +90,7 @@ Create or update the environment:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-blackwell.ps1
 ```
 
-The source repository does not duplicate upstream heavyweight models, native tools, or test videos. On its first run, the setup script downloads the Windows runtime assets (about 445 MB) from the pinned upstream 2.2.0 commit and verifies every SHA-256 checksum. Later runs reuse verified files. Run `download-assets.ps1` directly when only the assets need to be restored.
+The source repository does not duplicate upstream heavyweight models, native tools, or test videos. On its first run, the setup script downloads the Windows runtime assets (about 448 MiB (470 MB)) from the pinned upstream 2.2.0 commit and verifies every SHA-256 checksum. Later runs reuse verified files. Run `download-assets.ps1` directly when only the assets need to be restored.
 
 Run diagnostics:
 
@@ -97,12 +115,12 @@ FFmpeg may be available through PATH, an `ffmpeg` directory inside or next to th
 - OCR engines: 2
 - Batch: 8
 
-Choose Smart / Accurate when subtitle boundary precision matters more than maximum throughput. Draw a narrow, accurate subtitle region first. Automatic, Fast, and the legacy Accurate mode retain their previous behavior. Smart is the first-stage implementation and currently selects one sharp key frame per segment; multi-frame voting is planned for the next phase.
+Smart / Accurate is an experimental option for evaluating image-based subtitle boundaries; better accuracy or speed has not been established. Draw a narrow, accurate subtitle region first. Automatic, Fast, and the legacy Accurate mode retain their previous behavior. Smart is the first-stage implementation and currently selects one sharp key frame per segment; multi-frame voting is not implemented. Smart currently uses OpenCV scanning and one OCR worker; the Auto-mode NVDEC/dual-worker benchmarks do not apply. New Windows GPU end-to-end results are still needed.
 
 To compare with the server detector in the current terminal session:
 
 ```powershell
-set VSE_AUTO_MOBILE_DET=0
+$env:VSE_AUTO_MOBILE_DET = '0'
 .\open.bat
 ```
 

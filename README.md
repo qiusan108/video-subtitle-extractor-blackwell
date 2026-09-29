@@ -21,9 +21,9 @@
 
 - RTX 50 系列按实际 CUDA、FFmpeg 和视频编码能力检测，不把逻辑写死到某一个显卡型号。
 - 自动模式使用 **FFmpeg NVDEC + 2 fps 固定采样 + 字幕区域裁剪 + PP-OCRv5 mobile 检测 + server 识别**。
-- 新增 **智能 / 精准（Smart）模式**：字幕区域图像变化负责切时间轴，每段只选择最清晰关键帧进行 OCR；时间轴检测不再依赖 OCR 文本。
+- 新增可选实验功能 **智能 / 精准（Smart）模式**：字幕区域图像变化负责切时间轴，每段只选择最清晰关键帧进行 OCR；时间轴检测不再依赖 OCR 文本。
 - OCR 调用已抽象为 backend 接口；现阶段默认且内置的 backend 仍是原有 PP-OCRv5/PaddleOCR。
-- 默认使用 2 个 OCR 引擎、每引擎 Batch 8；第二个引擎显存不足时会自动回退到单引擎。
+- 自动/快速模式默认使用 2 个 OCR 引擎、每引擎 Batch 8；第二个引擎显存不足时会自动回退到单引擎。
 - NVDEC 对当前编码不可用时会回退到 OpenCV 采样路径。
 - 支持 H.264、HEVC、AV1、VP8/VP9、MPEG、VC-1、MJPEG 等可由本机 FFmpeg/CUVID 提供的解码器。
 - 保留上游 8 种界面语言和 87 种字幕识别语言。
@@ -31,7 +31,7 @@
 
 ## 已验证范围
 
-当前真机验证基线：
+既有自动模式的真机验证基线（不是 Smart 测试结果）：
 
 - GeForce RTX 5060 8 GB
 - Compute Capability 12.0
@@ -43,7 +43,7 @@
 
 参考视频历史最佳实测从 **1237.78 秒降到 180.66 秒**，约 **6.85×**。整理后的完整端到端回归为 **225.76 秒**，约 **5.48×**。
 
-最新两小时 H.264 回归：
+此前记录的两小时 H.264 自动模式回归：
 
 ```text
 源视频：215,916 帧 / 29.97 fps
@@ -56,6 +56,24 @@ OCR 引擎：2
 ```
 
 这些数字只代表这套测试环境。不同显卡、视频编码、分辨率、字幕区域和后台负载都会影响结果。RTX 5050、5060 Ti、5070 / 5070 Ti、5080、5090 及 Laptop GPU 采用同一套能力检测路径，但目前不能把它们都写成“已真机验证”。
+
+## 下载 v0.2.0
+
+- [版本说明](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.2.0-blackwell)
+- [源码 ZIP](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/download/v0.2.0-blackwell/vse-v0.2.0-blackwell-source.zip)
+- [SHA256SUMS.txt 校验文件](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/download/v0.2.0-blackwell/SHA256SUMS.txt)
+
+将两个文件下载到同一目录，先校验再解压：
+
+```powershell
+$expected = ((Get-Content .\SHA256SUMS.txt -Raw).Trim() -split '\s+')[0]
+$actual = (Get-FileHash .\vse-v0.2.0-blackwell-source.zip -Algorithm SHA256).Hash
+if ($actual -ne $expected) { throw 'Source ZIP SHA-256 mismatch' }
+Expand-Archive .\vse-v0.2.0-blackwell-source.zip -DestinationPath .
+Set-Location .\vse-v0.2.0-blackwell
+```
+
+这是源码版，不是免安装 EXE 或离线整合包。校验值只对应上述命名 ZIP，不对应 GitHub 另行生成的“Source code”归档；它用于核对文件完整性，不是代码签名。准备好下列依赖后，在解压目录运行安装命令。已有 v0.1.2 的用户请主动下载新版：旧程序仍显示上游版本 `2.2.0`，其更新检查可能漏报本次更新。
 
 ## 安装
 
@@ -72,7 +90,7 @@ OCR 引擎：2
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-blackwell.ps1
 ```
 
-源码仓库不重复存放上游的大型模型、原生组件和测试视频。首次执行安装脚本时，会按固定的上游 2.2.0 提交下载 Windows 所需运行资源（约 445 MB），并逐个校验 SHA-256；后续运行会复用已验证文件。如只需补齐资源，也可以单独执行 `download-assets.ps1`。
+源码仓库不重复存放上游的大型模型、原生组件和测试视频。首次执行安装脚本时，会按固定的上游 2.2.0 提交下载 Windows 所需运行资源（约 448 MiB（470 MB）），并逐个校验 SHA-256；后续运行会复用已验证文件。如只需补齐资源，也可以单独执行 `download-assets.ps1`。
 
 安装后运行诊断：
 
@@ -97,12 +115,12 @@ FFmpeg 可以位于 PATH、项目内或相邻的 `ffmpeg` 目录，也可以通�
 - OCR 引擎：2
 - Batch：8
 
-需要更准的字幕起止时间时，可改用“智能 / 精准”模式。该模式必须先框选尽量窄且准确的字幕区域。原有自动、快速和精准模式均保留原行为；Smart 是第一阶段实现，目前每段选择一个最清晰关键帧，尚未加入多帧投票。
+“智能 / 精准”是用于评估图像分段效果的实验选项，目前没有证据证明它比原模式更准或更快。该模式必须先框选尽量窄且准确的字幕区域。原有自动、快速和精准模式均保留原行为；Smart 是第一阶段实现，目前每段选择一个最清晰关键帧，尚未加入多帧投票。Smart 当前使用 OpenCV 扫描和单 OCR 引擎，不适用自动模式的 NVDEC/双引擎性能数据，仍需 Windows GPU 端到端实测。
 
 如果要对比 server 检测器，可在当前命令行会话中运行：
 
 ```powershell
-set VSE_AUTO_MOBILE_DET=0
+$env:VSE_AUTO_MOBILE_DET = '0'
 .\open.bat
 ```
 

@@ -8,8 +8,9 @@ from qfluentwidgets import (qconfig, ConfigItem, QConfig, OptionsValidator, Bool
 from backend.tools.constant import SubtitleArea, VideoSubFinderDecoder
 import configparser
 
-# 项目版本号
-VERSION = "2.2.0"
+# Blackwell Edition version; upstream ancestry is recorded separately.
+VERSION = "0.2.0"
+UPSTREAM_VERSION = "2.2.0"
 PROJECT_HOME_URL = "https://github.com/qiusan108/video-subtitle-extractor-blackwell"
 PROJECT_ISSUES_URL = PROJECT_HOME_URL + "/issues"
 PROJECT_RELEASES_URL = PROJECT_HOME_URL + "/releases"
