@@ -4,8 +4,10 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QFileDialog, QHBoxLayout, QVBoxLayout, QSizePolicy
-from qfluentwidgets import (PushButton, ConfigValidator, ConfigItem, PlainTextEdit,
-                          FluentIcon, CardWidget, SettingCardGroup, PushSettingCard, InfoBar)
+from qfluentwidgets import (
+    BodyLabel, CardWidget, ConfigItem, ConfigValidator, FluentIcon, InfoBar,
+    PlainTextEdit, PushButton, PushSettingCard, SettingCardGroup, TitleLabel,
+)
 from backend.config import tr
 from backend.tools.python_runner import AsyncPythonRunner
 from ui.icon.my_fluent_icon import MyFluentIcon
@@ -31,11 +33,19 @@ class TimelineSyncInterface(QWidget):
         )
         self.option = Option()
 
-        self.setContentsMargins(16, 16, 16, 16)
-
         self.expandLayout = QVBoxLayout(self)
+        self.expandLayout.setContentsMargins(24, 18, 24, 18)
+        self.expandLayout.setSpacing(14)
+        self.expandLayout.addWidget(TitleLabel(tr["TimelineSync"]["Title"], self))
+        intro = BodyLabel(tr["TimelineSync"].get(
+            "Intro", "将已有字幕的时间轴适配另一段视频。"
+        ), self)
+        intro.setWordWrap(True)
+        self.expandLayout.addWidget(intro)
 
-        self.advanced_group = SettingCardGroup(tr["TimelineSync"]["Title"], self)
+        self.advanced_group = SettingCardGroup(
+            tr["TimelineSync"].get("FilesSection", "选择文件"), self
+        )
         self.advanced_group.cardLayout.setSpacing(6)
         
         self.source_video = PushSettingCard(
@@ -73,11 +83,6 @@ class TimelineSyncInterface(QWidget):
         # 操作按钮容器
         button_container = CardWidget()
         button_container.setMinimumHeight(60)
-        button_container.setStyleSheet("""
-            background-color: #fcfdfe;
-            border: 1px solid #eeeff0;
-            border-radius: 6px;
-        """)
         button_layout = QHBoxLayout()
         button_layout.setContentsMargins(16, 16, 16, 16)
         button_layout.setSpacing(8)

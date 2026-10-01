@@ -42,12 +42,9 @@ class VideoDisplayComponent(QWidget):
         self.screen_width = screen.width()
         self.screen_height = screen.height()
         
-        # 设置视频预览区域大小（根据屏幕宽度动态调整）
-        self.video_preview_width = 960
+        # 预览保持在适合双栏布局的尺寸，避免它把整个应用窗口撑宽。
+        self.video_preview_width = 640
         self.video_preview_height = self.video_preview_width * 9 // 16
-        if self.screen_width // 2 < 960:
-            self.video_preview_width = 640
-            self.video_preview_height = self.video_preview_width * 9 // 16
             
         # 视频相关参数
         self.frame_width = None

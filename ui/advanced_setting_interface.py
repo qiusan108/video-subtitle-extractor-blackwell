@@ -5,7 +5,7 @@ import sys
 
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtWidgets import QFileDialog
-from qfluentwidgets import (ScrollArea, ExpandLayout, CardWidget, SubtitleLabel,
+from qfluentwidgets import (ScrollArea, ExpandLayout, CardWidget, TitleLabel,
                            FluentIcon, NavigationWidget, NavigationItemPosition,
                            SettingCardGroup, RangeSettingCard, SwitchSettingCard,
                            HyperlinkCard, PrimaryPushSettingCard, ComboBoxSettingCard, PushSettingCard,
@@ -44,6 +44,9 @@ class AdvancedSettingInterface(ScrollArea):
         self.setup_layout()
 
     def setup_layout(self):
+        self.expandLayout.addWidget(
+            TitleLabel(tr["Setting"]["AdvancedSetting"], self.scrollWidget)
+        )
         self.advanced_group.addSettingCard(self.rec_batch_number)
         self.advanced_group.addSettingCard(self.max_batch_size)
         self.advanced_group.addSettingCard(self.subtitle_area)
@@ -74,12 +77,15 @@ class AdvancedSettingInterface(ScrollArea):
         self.expandLayout.addWidget(self.about_group)
        
         self.expandLayout.setSpacing(16)
-        self.expandLayout.setContentsMargins(16, 16, 16, 48)
+        self.expandLayout.setContentsMargins(24, 18, 24, 48)
         
     def setup_ui(self):
         """设置UI"""
         # 高级设置组
-        self.advanced_group = SettingCardGroup(tr["Setting"]["AdvancedSetting"], self.scrollWidget)
+        self.advanced_group = SettingCardGroup(
+            tr["Setting"].get("RecognitionSection", tr["Setting"]["AdvancedSetting"]),
+            self.scrollWidget,
+        )
         # VideoSubFinder设置组
         self.video_sub_finder_group = SettingCardGroup(tr["Setting"]["VideoSubFinderSetting"], self.scrollWidget)
         # 开发设置组  

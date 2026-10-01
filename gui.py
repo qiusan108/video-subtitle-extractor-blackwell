@@ -12,20 +12,21 @@ import os
 import configparser
 import cv2
 import multiprocessing
+from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtWidgets import QApplication, QWidget
-from qfluentwidgets import (FluentWindow, PushButton, Slider, ProgressBar, PlainTextEdit,
-                          setTheme, Theme, FluentIcon, CardWidget, SettingCardGroup,
-                          ComboBoxSettingCard, SwitchSettingCard, setThemeColor, OptionsConfigItem,
-                          OptionsValidator, SubtitleLabel, HollowHandleStyle, qconfig, ConfigItem, QConfig,
-                          NavigationWidget, NavigationItemPosition, isDarkTheme, InfoBar)
+from qfluentwidgets import (
+    FluentWindow, FluentIcon, InfoBar, NavigationItemPosition,
+)
 
-from qframelesswindow.utils import getSystemAccentColor
-from backend.config import config, tr, VERSION
+from backend.config import config, tr, VERSION, PRODUCT_NAME
 from backend.tools.theme_listener import SystemThemeListener
 from backend.tools.process_manager import ProcessManager
 from ui.advanced_setting_interface import AdvancedSettingInterface
+from ui.brand_theme import (
+    BORDER, SIDEBAR, WINDOW, StudioBrandCard, apply_brand_theme, style_cards,
+)
 from ui.home_interface import HomeInterface
 from ui.timeline_sync_interface import TimelineSyncInterface
 from ui.burn_subtitles_interface import BurnSubtitlesInterface, burn_text
@@ -36,20 +37,37 @@ class SubtitleExtractorGUI(FluentWindow):
         super().__init__()
         # 禁用云母效果
         self.setMicaEffectEnabled(False)
-        # 设置深色主题并跟随系统主题色
-        # setTheme(Theme.LIGHT)
-        # setThemeColor(getSystemAccentColor(), save=True)
-
         # 初始化系统主题监听器并连接信号
         # self.themeListener = SystemThemeListener(self)
         # self.themeListener.start()
-        # 任何尺寸下都悬浮展开, 防止窗口撑大
-        self.navigationInterface.panel.minimumExpandWidth = 999999
-        # 设置窗口图标
-        self.setWindowIcon(QtGui.QIcon("design/vse.ico"))
-        self.setWindowTitle(tr['SubtitleExtractorGUI']['Title'] + " v" + VERSION)
+        self.navigationInterface.setExpandWidth(194)
+        self.navigationInterface.setCollapsible(False)
+        self.navigationInterface.setMenuButtonVisible(False)
+        self.navigationInterface.setReturnButtonVisible(False)
+        icon_path = Path(__file__).resolve().parent / 'design' / 'subtitle_studio.svg'
+        self.setWindowIcon(QtGui.QIcon(str(icon_path)))
+        self.setWindowTitle(f'{PRODUCT_NAME}  ·  v{VERSION}')
+        # The brand already occupies the sidebar header; keep the title bar
+        # available for dragging and window controls without duplicate text.
+        self.titleBar.iconLabel.hide()
+        self.titleBar.titleLabel.hide()
+        self.stackedWidget.setObjectName('studioStack')
+        self.stackedWidget.setStyleSheet(
+            f'#studioStack {{ background-color: {WINDOW}; }}'
+        )
+        self.navigationInterface.panel.setStyleSheet(
+            f'NavigationPanel {{ background-color: {SIDEBAR}; '
+            f'border-right: 1px solid {BORDER}; }}'
+        )
+        self.brand_card = StudioBrandCard(
+            icon_path, PRODUCT_NAME,
+            tr['SubtitleExtractorGUI'].get('BrandSubtitle', '提取 · 烧录'),
+            self.navigationInterface,
+        )
+        self.navigationInterface.addWidget('brand', self.brand_card)
         # 创建界面布局
         self._create_layout()
+        style_cards(self)
         self._connectSignalToSlot()
         self._lazy_check_update()
 
@@ -86,7 +104,10 @@ class SubtitleExtractorGUI(FluentWindow):
         self.advancedSettingInterface.setObjectName("AdvancedSettingInterface")
         
         # 添加到主窗口作为子界面
-        self.addSubInterface(self.homeInterface,FluentIcon.HOME, tr['SubtitleExtractorGUI']['Title'])
+        self.addSubInterface(
+            self.homeInterface, FluentIcon.HOME,
+            tr['SubtitleExtractorGUI'].get('ExtractTab', tr['SubtitleExtractorGUI']['Title'])
+        )
         self.addSubInterface(self.timelineSyncInterface,FluentIcon.FONT, tr['TimelineSync']['Title'])
         self.addSubInterface(self.burnSubtitlesInterface, FluentIcon.MOVIE, burn_text('Title', 'Burn Subtitles'))
         self.addSubInterface(self.advancedSettingInterface, FluentIcon.SETTING, tr['Setting']['AdvancedSetting'], NavigationItemPosition.BOTTOM)
@@ -180,6 +201,7 @@ if __name__ == '__main__':
     Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QtWidgets.QApplication(sys.argv)
     app.setAttribute(Qt.AA_DontCreateNativeWidgetSiblings)
+    apply_brand_theme(app)
     window = SubtitleExtractorGUI()
     # 先设置透明, 再显示, 否则会有闪烁的效果
     window.setWindowOpacity(0.0)

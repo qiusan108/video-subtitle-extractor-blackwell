@@ -47,7 +47,7 @@ class SubtitleBurnerLogicTests(unittest.TestCase):
             r'C:\视频 文件\input [1].mp4',
             r'C:\字幕 文件\sub,one.srt',
             r'C:\输出 文件\result [ok].mp4',
-            encoder='libx264', quality=19,
+            encoder='libx264', bitrate_mode='quality', quality=19,
         )
         command = build_burn_command('ffmpeg.exe', options, 'libx264', 'copy')
 
@@ -56,6 +56,23 @@ class SubtitleBurnerLogicTests(unittest.TestCase):
         self.assertEqual(command[command.index('-vf') + 1], 'subtitles=subtitle.ass')
         self.assertNotIn(options.subtitle_path, ' '.join(command))
         self.assertEqual(command[command.index('-crf') + 1], '19')
+
+    def test_source_size_mode_targets_original_video_bitrate(self):
+        options = BurnOptions(
+            'input.mp4', 'input.srt', 'output.mp4',
+            encoder='h264_nvenc', bitrate_mode='source',
+        )
+        command = build_burn_command(
+            'ffmpeg.exe', options, 'h264_nvenc', 'copy',
+            source_video_bitrate=4_276_899,
+        )
+
+        self.assertEqual(command[command.index('-b:v') + 1], '4276899')
+        self.assertEqual(command[command.index('-maxrate') + 1], '5773813')
+        self.assertEqual(command[command.index('-bufsize') + 1], '8553798')
+        self.assertNotIn('-cq', command)
+        self.assertNotIn('-movflags', command)
+        self.assertNotIn('+faststart', command)
 
     @mock.patch('backend.tools.subtitle_burner.list_encoders', return_value={'libx264'})
     @mock.patch('backend.tools.subtitle_burner.encoder_works', return_value=False)

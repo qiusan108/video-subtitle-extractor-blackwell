@@ -8,7 +8,9 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
 from PySide6.QtCore import Slot, QRect, Signal
 from PySide6.QtGui import QTextCharFormat, QColor
 from PySide6 import QtWidgets
-from qfluentwidgets import (PushButton, CardWidget, PlainTextEdit, FluentIcon)
+from qfluentwidgets import (
+    BodyLabel, CardWidget, FluentIcon, PlainTextEdit, PushButton, TitleLabel,
+)
 from ui.setting_interface import SettingInterface
 from ui.component.video_display_component import VideoDisplayComponent
 from ui.component.task_list_component import TaskListComponent, TaskStatus, TaskOptions
@@ -50,9 +52,22 @@ class HomeInterface(QWidget):
 
     def __init_widgets(self):
         """创建主页面"""
-        main_layout = QHBoxLayout(self)
-        main_layout.setSpacing(8)
-        main_layout.setContentsMargins(16, 16, 16, 16)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(24, 18, 24, 18)
+        root_layout.setSpacing(14)
+        root_layout.addWidget(TitleLabel(
+            tr['SubtitleExtractorGUI'].get('ExtractTab', tr['SubtitleExtractorGUI']['Title']),
+            self,
+        ))
+        intro = BodyLabel(tr['SubtitleExtractorGUI'].get(
+            'ExtractIntro', '从视频画面识别字幕，检查结果并导出字幕文件。'
+        ), self)
+        intro.setWordWrap(True)
+        root_layout.addWidget(intro)
+        main_layout = QHBoxLayout()
+        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.addLayout(main_layout, 1)
 
         # 左侧视频区域
         left_layout = QVBoxLayout()
@@ -616,4 +631,3 @@ class HomeInterface(QWidget):
         except Exception as e:
             print(f"Error during close window:", e)
         super().closeEvent(event)
-    

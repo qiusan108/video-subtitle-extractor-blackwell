@@ -10,6 +10,7 @@ import configparser
 
 # 项目版本号
 VERSION = "2.2.0"
+PRODUCT_NAME = "字幕工坊"
 PROJECT_HOME_URL = "https://github.com/qiusan108/video-subtitle-extractor-blackwell"
 PROJECT_ISSUES_URL = PROJECT_HOME_URL + "/issues"
 PROJECT_RELEASES_URL = PROJECT_HOME_URL + "/releases"

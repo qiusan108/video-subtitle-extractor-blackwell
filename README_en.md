@@ -1,10 +1,10 @@
 [简体中文](README.md) | English
 
-# Video Subtitle Extractor — Blackwell Edition
+# 字幕工坊 (Subtitle Studio) — Blackwell Edition
 
-This is an NVIDIA Blackwell / RTX 50-series optimized derivative of [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0.
+Subtitle Studio is a Windows desktop derivative of [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0, optimized for NVIDIA Blackwell / RTX 50-series GPUs.
 
-It keeps the same core purpose: extracting hard-coded subtitles from video and generating SRT/TXT files. This edition mainly rebuilds the Windows + NVIDIA automatic-mode pipeline so RTX 50-series GPUs can use CUDA/NVDEC, fixed-rate sampling, and OCR micro-batching instead of falling back to the older slow path.
+It brings three workflows into one interface: extracting hardcoded subtitles from video, synchronizing an existing subtitle file, and burning SRT/ASS subtitles into video. The extraction pipeline supports CUDA/NVDEC, fixed-rate sampling, and OCR micro-batching.
 
 ## Supported GPUs and use cases
 
@@ -15,7 +15,7 @@ This project targets **hardcoded subtitle extraction, video subtitle OCR, and ba
 - Physically verified hardware: RTX 5060 8 GB. Community results for other RTX 50 models are welcome.
 - Core technologies: NVIDIA Blackwell, CUDA, NVDEC, FFmpeg, PaddlePaddle, PaddleOCR, and PP-OCRv5.
 
-<p align="center"><img src="design/demo.png" alt="VSE screenshot"/></p>
+<p align="center"><img src="design/subtitle_studio_preview.png" alt="Subtitle Studio burn-in screen"/></p>
 
 ## What changed
 
@@ -95,7 +95,8 @@ Open **Burn Subtitles** in the left navigation, then choose an input video, an S
 - SRT is converted to ASS in an isolated temporary directory. Font, size, bottom margin, outline, shadow, and text color are configurable.
 - ASS keeps its embedded fonts, positions, colors, and effects; the SRT style controls do not override an ASS file.
 - Auto performs a real one-frame NVENC probe and prefers `h264_nvenc` when usable, otherwise `libx264`. `libx264`, `libx265`, `h264_nvenc`, and `hevc_nvenc` can also be selected explicitly.
-- The quality value maps to CRF for CPU encoders and CQ for NVIDIA encoders. Lower values generally mean higher quality and larger files.
+- The default “Approximate source size” mode reads the source video bitrate and uses it as the output target, preventing accidental file-size inflation. Container overhead and bitrate variation can still cause a small difference.
+- “Quality first” leaves output size unrestricted. Its quality value maps to CRF for CPU encoders and CQ for NVIDIA encoders; lower values generally mean higher quality and larger files.
 - Audio is stream-copied by default and automatically retries as AAC 192 kbps when the output container cannot accept the source audio codec.
 - Progress and cancellation are supported. Input/output paths and font names may contain Unicode, spaces, and common special characters; on Windows the subtitle filter uses an isolated temporary working directory to avoid path escaping problems.
 

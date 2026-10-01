@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $assetInstaller)) {
 }
 
 & $assetInstaller -Root $Root -Platform windows
-if ($LASTEXITCODE -ne 0) { throw "Failed to prepare OCR models and native tools." }
+if (-not $?) { throw "Failed to prepare OCR models and native tools." }
 
 if (-not (Test-Path -LiteralPath $venvPython)) {
     $pyLauncher = Get-Command "py.exe" -ErrorAction SilentlyContinue

@@ -3,6 +3,7 @@
 from collections import deque
 from dataclasses import dataclass, replace
 import html
+import json
 import os
 import re
 import shutil
@@ -48,6 +49,7 @@ class BurnOptions:
     shadow: float = 1.0
     color: str = '#FFFFFF'
     encoder: str = 'auto'
+    bitrate_mode: str = 'source'
     quality: int = 20
 
 
@@ -189,6 +191,8 @@ def validate_options(options):
         raise BurnError('Output path must include a video file extension.')
     if options.encoder not in SUPPORTED_ENCODERS:
         raise BurnError(f'Unsupported video encoder: {options.encoder}')
+    if options.bitrate_mode not in ('source', 'quality'):
+        raise BurnError(f'Unsupported bitrate mode: {options.bitrate_mode}')
     if not 0 <= int(options.quality) <= 51:
         raise BurnError('Quality must be between 0 and 51.')
     if int(options.font_size) <= 0 or int(options.margin_bottom) < 0:
@@ -215,12 +219,12 @@ def select_encoder(ffmpeg_path, requested='auto'):
     return requested
 
 
-def _probe_duration(ffmpeg_path, video_path):
+def _probe_media_info(ffmpeg_path, video_path):
     probe = subprocess.run(
         [
             companion_ffprobe_path(ffmpeg_path), '-v', 'error',
-            '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1', video_path,
+            '-show_entries', 'format=duration,bit_rate:stream=codec_type,bit_rate',
+            '-of', 'json', video_path,
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -229,34 +233,68 @@ def _probe_duration(ffmpeg_path, video_path):
         check=False,
     )
     if probe.returncode != 0:
-        return 0.0
+        return 0.0, 0
     try:
-        return max(0.0, float(probe.stdout.decode('utf-8', errors='replace').strip()))
-    except ValueError:
-        return 0.0
+        info = json.loads(probe.stdout.decode('utf-8', errors='replace'))
+        duration = max(0.0, float(info.get('format', {}).get('duration', 0)))
+        video_bitrate = 0
+        audio_bitrate = 0
+        for stream in info.get('streams', []):
+            try:
+                bitrate = max(0, int(stream.get('bit_rate', 0)))
+            except (TypeError, ValueError):
+                bitrate = 0
+            if stream.get('codec_type') == 'video' and not video_bitrate:
+                video_bitrate = bitrate
+            elif stream.get('codec_type') == 'audio':
+                audio_bitrate += bitrate
+        if not video_bitrate:
+            try:
+                total_bitrate = max(
+                    0, int(info.get('format', {}).get('bit_rate', 0))
+                )
+            except (TypeError, ValueError):
+                total_bitrate = 0
+            video_bitrate = max(0, total_bitrate - audio_bitrate)
+        return duration, video_bitrate
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return 0.0, 0
 
 
-def build_burn_command(ffmpeg_path, options, encoder, audio_codec, subtitle_name='subtitle.ass'):
+def build_burn_command(
+        ffmpeg_path, options, encoder, audio_codec,
+        subtitle_name='subtitle.ass', source_video_bitrate=0):
     """Build an argv list. The libass path stays relative to an isolated cwd."""
     command = [
         ffmpeg_path, '-hide_banner', '-y', '-i', os.path.abspath(options.video_path),
         '-map', '0:v:0', '-map', '0:a?', '-vf', f'subtitles={subtitle_name}',
         '-c:v', encoder, '-pix_fmt', 'yuv420p',
     ]
+    match_source = options.bitrate_mode == 'source' and source_video_bitrate > 0
     if encoder in ('libx264', 'libx265'):
-        command.extend(['-preset', 'medium', '-crf', str(int(options.quality))])
+        command.extend(['-preset', 'medium'])
+    else:
+        command.extend(['-preset', 'p5'])
+    if match_source:
+        target = int(source_video_bitrate)
+        command.extend([
+            '-b:v', str(target),
+            '-maxrate', str(int(target * 1.35)),
+            '-bufsize', str(target * 2),
+        ])
+        if encoder.endswith('_nvenc'):
+            command.extend(['-rc', 'vbr'])
+    elif encoder in ('libx264', 'libx265'):
+        command.extend(['-crf', str(int(options.quality))])
     else:
         command.extend([
-            '-preset', 'p5', '-rc', 'vbr', '-cq', str(int(options.quality)),
-            '-b:v', '0',
+            '-rc', 'vbr', '-cq', str(int(options.quality)), '-b:v', '0',
         ])
     command.extend(['-c:a', audio_codec])
     if audio_codec == 'aac':
         command.extend(['-b:a', '192k'])
     if encoder in ('libx265', 'hevc_nvenc') and os.path.splitext(options.output_path)[1].lower() in ('.mp4', '.mov'):
         command.extend(['-tag:v', 'hvc1'])
-    if os.path.splitext(options.output_path)[1].lower() in ('.mp4', '.mov', '.m4v'):
-        command.extend(['-movflags', '+faststart'])
     command.extend([
         '-map_metadata', '0', '-map_chapters', '0',
         '-progress', 'pipe:1', '-nostats', os.path.abspath(options.output_path),
@@ -343,7 +381,19 @@ class SubtitleBurner:
                 'full FFmpeg build with libass support.'
             )
         selected = select_encoder(ffmpeg_path, self.options.encoder)
-        duration = _probe_duration(ffmpeg_path, video_path)
+        duration, source_video_bitrate = _probe_media_info(
+            ffmpeg_path, video_path
+        )
+        if self.options.bitrate_mode == 'source':
+            if source_video_bitrate:
+                self.log(
+                    'Matching source video bitrate: '
+                    f'{source_video_bitrate / 1_000_000:.2f} Mbps'
+                )
+            else:
+                self.log(
+                    'Source video bitrate is unavailable; using quality mode.'
+                )
         attempts = [(selected, 'copy')]
         attempts.append((selected, 'aac'))
         if self.options.encoder == 'auto' and selected == 'h264_nvenc':
@@ -372,7 +422,8 @@ class SubtitleBurner:
                             f'Retrying with video={encoder}, audio={audio_codec}...'
                         )
                     command = build_burn_command(
-                        ffmpeg_path, attempt_options, encoder, audio_codec
+                        ffmpeg_path, attempt_options, encoder, audio_codec,
+                        source_video_bitrate=source_video_bitrate,
                     )
                     return_code, details = self._run_attempt(
                         command, work_dir, duration

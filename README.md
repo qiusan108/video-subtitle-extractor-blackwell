@@ -1,10 +1,10 @@
 简体中文 | [English](README_en.md)
 
-# Video Subtitle Extractor — Blackwell Edition
+# 字幕工坊 — Blackwell 版
 
-这是基于 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0 开发的 NVIDIA Blackwell / RTX 50 系列独立开源版本。
+字幕工坊是基于 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0 开发的 Windows 桌面工具，针对 NVIDIA Blackwell / RTX 50 系列优化。
 
-它仍然做同一件事：从视频中的硬字幕提取文字并生成 SRT/TXT；本版本主要重做了 Windows + NVIDIA GPU 的自动模式链路，让 RTX 50 系列能够使用 CUDA/NVDEC、固定频率采样和 OCR 微批处理，而不是退回较慢的旧路径。
+一个界面完成三件事：从视频画面提取硬字幕、同步已有字幕的时间轴、将 SRT/ASS 字幕烧录回视频。提取管线支持 CUDA/NVDEC、固定频率采样和 OCR 微批处理。
 
 ## 支持的显卡与适用场景
 
@@ -15,7 +15,7 @@
 - 已真机验证：RTX 5060 8 GB；其他 RTX 50 型号欢迎提交测试结果。
 - 核心技术：NVIDIA Blackwell、CUDA、NVDEC、FFmpeg、PaddlePaddle、PaddleOCR、PP-OCRv5。
 
-<p align="center"><img src="design/demo.png" alt="VSE screenshot"/></p>
+<p align="center"><img src="design/subtitle_studio_preview.png" alt="字幕工坊的字幕烧录页面"/></p>
 
 ## 本版本改了什么
 
@@ -95,7 +95,8 @@ FFmpeg 可以位于 PATH、项目内或相邻的 `ffmpeg` 目录，也可以通�
 - SRT 会先在临时目录转换为 ASS，可设置字体、字号、底部边距、描边、阴影和文字颜色。
 - ASS 会保留文件已有的字体、位置、颜色和特效，因此界面的 SRT 样式选项不会覆盖 ASS 样式。
 - “自动”编码器会实际执行一帧 NVENC 探测；可用时优先 `h264_nvenc`，否则使用 `libx264`。也可手动选择 `libx264`、`libx265`、`h264_nvenc` 或 `hevc_nvenc`。
-- 质量值同时用于 CPU 的 CRF 和 NVIDIA 的 CQ；数值越低，画质和文件大小通常越高。
+- 默认使用“接近原片体积”，读取源视频码率作为输出目标，避免烧录后文件无意中大幅膨胀；由于封装开销和码率波动，最终大小可能略有差异。
+- “画质优先”模式不限制输出体积，质量值用于 CPU 的 CRF 和 NVIDIA 的 CQ；数值越低，画质和文件大小通常越高。
 - 音频默认直接复制；输出封装不兼容源音频时，会自动改用 AAC 192 kbps。
 - 支持进度显示和取消。输入/输出路径和字体名可包含中文、空格及常见特殊字符；Windows 下字幕滤镜使用隔离的临时工作目录，避免路径转义问题。
 

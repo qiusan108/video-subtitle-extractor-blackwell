@@ -72,10 +72,17 @@ class SharpestFrameSelector(KeyFrameSelector):
             )
         image = np.asarray(image)
         if image.ndim == 3 and cv2 is not None:
+            if image.dtype not in (np.uint8, np.uint16, np.float32):
+                image = image.astype(np.float32)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         elif image.ndim == 3:
             image = image.astype(np.float64).mean(axis=2)
         if cv2 is not None:
+            # Python lists become int32/int64 arrays, which recent OpenCV
+            # builds cannot combine with a CV_64F Laplacian destination.
+            # Normal video frames remain numerically equivalent after this
+            # conversion, and the variance ranking is unchanged.
+            image = image.astype(np.float64, copy=False)
             return float(cv2.Laplacian(image, cv2.CV_64F).var())
         image = image.astype(np.float64)
         horizontal = np.diff(image, axis=1)
