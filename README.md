@@ -15,9 +15,9 @@
 
 ## 获取与运行
 
-当前 GitHub **main 分支是源码开发版**，包含上图的新界面和字幕烧录功能；[v0.2.0 下载页](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.2.0-blackwell)是此前的提取功能源码版，**不包含烧录功能**。目前没有提供新版免安装 EXE。
+从 [v0.3.0 下载页](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.3.0-blackwell)获取新版源码压缩包，包含上图的新界面和字幕烧录功能。旧的 v0.2.0 不包含烧录功能。目前仍没有免安装 EXE。
 
-在 Windows 10/11 x64 上运行 main 分支，需要 Python 3.12 x64 和 FFmpeg。提取功能需要相应 NVIDIA 驱动；烧录功能要求 FFmpeg 包含 libass。下载本仓库源码后，在项目目录运行：
+在 Windows 10/11 x64 上运行，需要 Python 3.12 x64 和 FFmpeg。提取功能需要相应 NVIDIA 驱动；烧录功能要求 FFmpeg 包含 libass。解压新版源码包后，在项目目录运行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-blackwell.ps1

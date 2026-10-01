@@ -15,9 +15,9 @@ A Windows desktop tool to extract hardcoded subtitles, synchronize subtitle timi
 
 ## Get started
 
-The GitHub **main branch is development source** and includes the new interface and burn-in workflow shown above. The earlier [v0.2.0 source release](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.2.0-blackwell) covers extraction only and **does not include burn-in**. There is no updated standalone EXE yet.
+Download the new source archive from the [v0.3.0 release page](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.3.0-blackwell). It includes the interface and burn-in workflow shown above. The older v0.2.0 release does not include burn-in. A standalone EXE is not available yet.
 
-On Windows 10/11 x64, install Python 3.12 x64 and FFmpeg. Extraction requires an appropriate NVIDIA driver; burn-in requires an FFmpeg build with libass. Download this repository's source and run from its directory:
+On Windows 10/11 x64, install Python 3.12 x64 and FFmpeg. Extraction requires an appropriate NVIDIA driver; burn-in requires an FFmpeg build with libass. Extract the new source archive and run from its directory:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-blackwell.ps1

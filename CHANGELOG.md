@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 字幕工坊 0.3.0 development
+## 0.3.0 — 2026-10-01
 
 - Add FFmpeg/libass SRT/ASS subtitle burn-in with CPU/NVIDIA encoding, progress, cancellation, Unicode-safe paths, and audio copy with AAC fallback.
 - Add a source-bitrate output mode to reduce unexpected file-size growth; remove the MP4 faststart second pass to avoid a long finalization step.

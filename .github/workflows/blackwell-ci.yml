@@ -21,6 +21,8 @@ jobs:
       - name: Compile modified modules
         run: >-
           python -m py_compile
+          gui.py
+          backend/config.py
           backend/main.py
           backend/tools/ocr_backend.py
           backend/tools/ocr.py
@@ -32,7 +34,10 @@ jobs:
           backend/tools/subtitle_burner.py
           backend/tools/ffmpeg_utils.py
           backend/tools/nvidia_video.py
+          ui/brand_theme.py
           ui/burn_subtitles_interface.py
+          ui/home_interface.py
+          ui/timeline_sync_interface.py
       - name: Run dependency-free compatibility tests
         run: python -m unittest discover -s tests -p "test_*.py"
 
