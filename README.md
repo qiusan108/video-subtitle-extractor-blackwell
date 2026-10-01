@@ -1,151 +1,37 @@
 简体中文 | [English](README_en.md)
 
-# 字幕工坊 — Blackwell 版
+# 字幕工坊
 
-字幕工坊是基于 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 2.2.0 开发的 Windows 桌面工具，针对 NVIDIA Blackwell / RTX 50 系列优化。
+一款 Windows 桌面工具：提取视频画面中的字幕、同步字幕时间轴，也能将 SRT/ASS 字幕永久烧录进视频。基于 [YaoFANGUK/video-subtitle-extractor](https://github.com/YaoFANGUK/video-subtitle-extractor) 开发，针对 NVIDIA RTX 50 / Blackwell 显卡优化提取流程。
 
-一个界面完成三件事：从视频画面提取硬字幕、同步已有字幕的时间轴、将 SRT/ASS 字幕烧录回视频。提取管线支持 CUDA/NVDEC、固定频率采样和 OCR 微批处理。
+![字幕工坊的字幕烧录界面](design/subtitle_studio_preview.png)
 
-## 支持的显卡与适用场景
+## 能做什么
 
-本项目适合在 Windows 上进行**视频硬字幕提取、视频字幕 OCR、批量 SRT 生成**，英文场景通常也称为 *hardcoded subtitle extraction* 或 *GPU-accelerated video OCR*。
+- **提取字幕**：识别视频画面中的硬字幕，生成 SRT/TXT；支持自动、快速、精准及实验性的智能模式。
+- **同步时间轴**：调整已有字幕与视频的时间对应关系。
+- **烧录字幕**：将 SRT/ASS 永久嵌入视频画面。SRT 可设置字体、字号、颜色、描边、阴影和底部边距；ASS 保留原有样式。支持 CPU 或 NVIDIA 编码、进度显示与取消。
+- **本机处理**：视频、字幕和 OCR 均在本机处理；无需上传视频。
 
-- 通用支持目标：GeForce RTX 5050、5060、5060 Ti、5070、5070 Ti、5080、5090 及相应 Laptop GPU。
-- 实际启用方式：检测 NVIDIA CUDA、FFmpeg NVDEC/CUVID 和视频编码能力，而不是依赖固定显卡名称。
-- 已真机验证：RTX 5060 8 GB；其他 RTX 50 型号欢迎提交测试结果。
-- 核心技术：NVIDIA Blackwell、CUDA、NVDEC、FFmpeg、PaddlePaddle、PaddleOCR、PP-OCRv5。
+## 获取与运行
 
-<p align="center"><img src="design/subtitle_studio_preview.png" alt="字幕工坊的字幕烧录页面"/></p>
+当前 GitHub **main 分支是源码开发版**，包含上图的新界面和字幕烧录功能；[v0.2.0 下载页](https://github.com/qiusan108/video-subtitle-extractor-blackwell/releases/tag/v0.2.0-blackwell)是此前的提取功能源码版，**不包含烧录功能**。目前没有提供新版免安装 EXE。
 
-## 本版本改了什么
-
-- RTX 50 系列按实际 CUDA、FFmpeg 和视频编码能力检测，不把逻辑写死到某一个显卡型号。
-- 自动模式使用 **FFmpeg NVDEC + 2 fps 固定采样 + 字幕区域裁剪 + PP-OCRv5 mobile 检测 + server 识别**。
-- 新增 **智能 / 精准（Smart）模式**：字幕区域图像变化负责切时间轴，每段只选择最清晰关键帧进行 OCR；时间轴检测不再依赖 OCR 文本。
-- OCR 调用已抽象为 backend 接口；现阶段默认且内置的 backend 仍是原有 PP-OCRv5/PaddleOCR。
-- 默认使用 2 个 OCR 引擎、每引擎 Batch 8；第二个引擎显存不足时会自动回退到单引擎。
-- NVDEC 对当前编码不可用时会回退到 OpenCV 采样路径。
-- 支持 H.264、HEVC、AV1、VP8/VP9、MPEG、VC-1、MJPEG 等可由本机 FFmpeg/CUVID 提供的解码器。
-- 保留上游 8 种界面语言和 87 种字幕识别语言。
-- 提供一键环境配置、诊断脚本、纯逻辑测试和 GitHub Actions。
-
-## 已验证范围
-
-当前真机验证基线：
-
-- GeForce RTX 5060 8 GB
-- Compute Capability 12.0
-- PaddlePaddle GPU 3.3.1
-- CUDA 12.9
-- PaddleOCR 3.4.1
-- FFmpeg 8.1.2
-- Windows 10/11 x64
-
-参考视频历史最佳实测从 **1237.78 秒降到 180.66 秒**，约 **6.85×**。整理后的完整端到端回归为 **225.76 秒**，约 **5.48×**。
-
-最新两小时 H.264 回归：
-
-```text
-源视频：215,916 帧 / 29.97 fps
-采样：14,409 帧 / 2.00 fps
-失败帧：0
-OCR 引擎：2
-平均微批次：8.0
-最终 SRT：672 条字幕轴
-总耗时：225.76 秒
-```
-
-这些数字只代表这套测试环境。不同显卡、视频编码、分辨率、字幕区域和后台负载都会影响结果。RTX 5050、5060 Ti、5070 / 5070 Ti、5080、5090 及 Laptop GPU 采用同一套能力检测路径，但目前不能把它们都写成“已真机验证”。
-
-## 安装
-
-需要：
-
-- Windows 10/11 x64
-- Python 3.12 x64
-- 较新的 NVIDIA 驱动
-- 含 CUDA/CUVID 解码器的 FFmpeg
-
-创建或更新环境：
+在 Windows 10/11 x64 上运行 main 分支，需要 Python 3.12 x64 和 FFmpeg。提取功能需要相应 NVIDIA 驱动；烧录功能要求 FFmpeg 包含 libass。下载本仓库源码后，在项目目录运行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup-blackwell.ps1
-```
-
-源码仓库不重复存放上游的大型模型、原生组件和测试视频。首次执行安装脚本时，会按固定的上游 2.2.0 提交下载 Windows 所需运行资源（约 445 MB），并逐个校验 SHA-256；后续运行会复用已验证文件。如只需补齐资源，也可以单独执行 `download-assets.ps1`。
-
-安装后运行诊断：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\diagnose.ps1
-```
-
-启动：
-
-```powershell
 .\open.bat
 ```
 
-FFmpeg 可以位于 PATH、项目内或相邻的 `ffmpeg` 目录，也可以通过 `VSE_FFMPEG_PATH` 指定。
+首次配置会下载 OCR 模型和原生运行组件，并校验下载文件；Python 依赖另由 pip 安装。FFmpeg 可放在系统 PATH、项目内或相邻的 `ffmpeg` 目录，也可用 `VSE_FFMPEG_PATH` 指定。如果安装失败，可运行 `diagnose.ps1` 查看环境信息。
 
-## 字幕烧录到视频
+## 使用提示
 
-左侧打开 **字幕烧录**，选择输入视频、SRT/ASS 字幕和输出路径即可把字幕永久渲染到画面中。该功能使用 FFmpeg 的 `subtitles`/libass 滤镜，本机完成处理，不影响原有字幕提取流程。
+- 提取时，先框选尽量准确的字幕区域。智能模式仍属实验功能；已公开的 RTX 5060 性能数据只对应原自动模式。
+- 烧录时选择视频、SRT/ASS 和输出路径。默认尽量接近原视频大小，但结果不会精确一致；“画质优先”模式可能产生更大的文件。
+- 烧录需要重新编码视频。长视频完成时间取决于显卡、编码器和画质；ASS 的内嵌样式不会被界面的 SRT 样式选项覆盖。
 
-- SRT 会先在临时目录转换为 ASS，可设置字体、字号、底部边距、描边、阴影和文字颜色。
-- ASS 会保留文件已有的字体、位置、颜色和特效，因此界面的 SRT 样式选项不会覆盖 ASS 样式。
-- “自动”编码器会实际执行一帧 NVENC 探测；可用时优先 `h264_nvenc`，否则使用 `libx264`。也可手动选择 `libx264`、`libx265`、`h264_nvenc` 或 `hevc_nvenc`。
-- 默认使用“接近原片体积”，读取源视频码率作为输出目标，避免烧录后文件无意中大幅膨胀；由于封装开销和码率波动，最终大小可能略有差异。
-- “画质优先”模式不限制输出体积，质量值用于 CPU 的 CRF 和 NVIDIA 的 CQ；数值越低，画质和文件大小通常越高。
-- 音频默认直接复制；输出封装不兼容源音频时，会自动改用 AAC 192 kbps。
-- 支持进度显示和取消。输入/输出路径和字体名可包含中文、空格及常见特殊字符；Windows 下字幕滤镜使用隔离的临时工作目录，避免路径转义问题。
+## 开源与反馈
 
-FFmpeg 必须包含 libass（`ffmpeg -filters` 中应出现 `subtitles`）。烧录会重新编码视频，因此输出画质和速度取决于所选编码器与质量值。
-
-## 推荐起点
-
-- 模式：自动
-- 手动框选准确、尽量窄的字幕区域
-- 置信度：70
-- 采样：2 fps
-- OCR 引擎：2
-- Batch：8
-
-需要更准的字幕起止时间时，可改用“智能 / 精准”模式。该模式必须先框选尽量窄且准确的字幕区域。原有自动、快速和精准模式均保留原行为；Smart 是第一阶段实现，目前每段选择一个最清晰关键帧，尚未加入多帧投票。
-
-如果要对比 server 检测器，可在当前命令行会话中运行：
-
-```powershell
-set VSE_AUTO_MOBILE_DET=0
-.\open.bat
-```
-
-Smart 模式可通过以下环境变量微调；不设置时使用括号内默认值：
-
-- `VSE_SMART_SCAN_FPS`：每秒分析的字幕区域帧数（`8`）
-- `VSE_SMART_CHANGE_THRESHOLD`：画面变化切段阈值（`0.08`，越小越敏感）
-- `VSE_SMART_MIN_EDGE_DENSITY`：判定区域存在字幕的最小边缘密度（`0.004`）
-- `VSE_SMART_MIN_SEGMENT_MS`：允许切出的最短字幕段（`250` 毫秒）
-- `VSE_OCR_BACKEND`：OCR backend 名称（当前内置值为 `paddle`）
-
-## 质量与兼容性边界
-
-自动模式为了速度使用 mobile 检测器定位文字。极细、模糊、低对比度字幕理论上更容易漏检，因此重要视频仍建议抽查片头、中段和片尾。
-
-更高端显卡也不建议盲目增大 Batch；RTX 5060 的实测中 Batch 16 没有带来收益。
-
-## 隐私
-
-视频解码、OCR 和字幕生成都在本机完成。诊断结果可能包含 GPU 型号、驱动版本、FFmpeg 路径和依赖版本；提交 Issue 前请检查其中是否包含个人目录名。
-
-## 开源与上游
-
-本项目是上游 VSE 的修改版，继续遵循 Apache License 2.0，并保留上游版权与归属信息。
-
-- 变更记录：[CHANGELOG.md](CHANGELOG.md)
-- 贡献说明：[CONTRIBUTING.md](CONTRIBUTING.md)
-- 安全说明：[SECURITY.md](SECURITY.md)
-- 许可证：[LICENSE](LICENSE)
-- 归属说明：[NOTICE](NOTICE)
-
-如果提交性能问题，请同时提供 `diagnose.ps1` 结果、视频编码/分辨率/帧率、字幕区域、最终 SRT 条数和总耗时。
+本项目延续上游的 [Apache-2.0 许可证](LICENSE)，并保留[上游归属说明](NOTICE)。更多开发与测试记录见 [CHANGELOG](CHANGELOG.md)；遇到问题可提交 [Issue](https://github.com/qiusan108/video-subtitle-extractor-blackwell/issues)，请勿上传无权公开的视频或字幕。

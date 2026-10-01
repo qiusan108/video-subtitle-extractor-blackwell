@@ -8,8 +8,9 @@ from qfluentwidgets import (qconfig, ConfigItem, QConfig, OptionsValidator, Bool
 from backend.tools.constant import SubtitleArea, VideoSubFinderDecoder
 import configparser
 
-# 项目版本号
-VERSION = "2.2.0"
+# 字幕工坊开发版；上游来源版本单独记录。
+VERSION = "0.3.0"
+UPSTREAM_VERSION = "2.2.0"
 PRODUCT_NAME = "字幕工坊"
 PROJECT_HOME_URL = "https://github.com/qiusan108/video-subtitle-extractor-blackwell"
 PROJECT_ISSUES_URL = PROJECT_HOME_URL + "/issues"

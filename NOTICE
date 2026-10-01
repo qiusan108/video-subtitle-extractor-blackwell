@@ -1,5 +1,5 @@
-VSE Blackwell Edition
-Copyright 2026 VSE Blackwell Edition contributors
+字幕工坊 (Subtitle Studio), Blackwell Edition
+Copyright 2026 字幕工坊 contributors
 
 This product is derived from video-subtitle-extractor by YaoFANGUK and its
 contributors:
@@ -9,7 +9,7 @@ The upstream project and this derivative are distributed under the Apache
 License, Version 2.0. The original copyright notices and LICENSE file must be
 retained. Blackwell-specific changes include NVDEC sampling, OCR micro-batching,
 multi-engine OCR, hybrid mobile-detection/server-recognition mode, diagnostics,
-and compatibility tooling.
+compatibility tooling, and FFmpeg/libass subtitle burn-in.
 
 NVIDIA, CUDA, NVDEC, GeForce, and RTX are trademarks or registered trademarks
 of NVIDIA Corporation. This project is not affiliated with or endorsed by

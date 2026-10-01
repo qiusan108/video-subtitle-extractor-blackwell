@@ -35,3 +35,61 @@ jobs:
           ui/burn_subtitles_interface.py
       - name: Run dependency-free compatibility tests
         run: python -m unittest discover -s tests -p "test_*.py"
+
+  source-release:
+    # Publishing is deliberate: a release commit on main, after all checks.
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      startsWith(github.event.head_commit.message, 'release: v')
+    needs: source-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package tracked source and compute SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^VERSION = "\([0-9]*\.[0-9]*\.[0-9]*\)"$/\1/p' backend/config.py)
+          test -n "$version"
+          tag="v${version}-blackwell"
+          test "$(git log -1 --format=%s)" = "release: $tag"
+          notes=".github/release-notes/$tag.md"
+          test -s "$notes"
+          mkdir -p dist
+          archive="vse-${tag}-source.zip"
+          git archive --format=zip --prefix="vse-${tag}/" "$GITHUB_SHA" -o "dist/$archive"
+          (cd dist && sha256sum "$archive" > SHA256SUMS.txt)
+          cp "$notes" dist/release-notes.md
+          {
+            printf '\n## Source provenance / 源码校验\n\n'
+            printf 'Commit: `%s`\n\n' "$GITHUB_SHA"
+            printf '```text\n'
+            cat dist/SHA256SUMS.txt
+            printf '```\n'
+          } >> dist/release-notes.md
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "SOURCE_ARCHIVE=$archive" >> "$GITHUB_ENV"
+      - name: Publish source release with checksums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Never move an existing tag or replace published release assets.
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG"; then
+            echo "Tag already exists; refusing to overwrite it."
+            exit 1
+          else
+            status=$?
+            test "$status" -eq 2
+          fi
+          gh release create "$RELEASE_TAG" \
+            "dist/$SOURCE_ARCHIVE" dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "字幕工坊 / Subtitle Studio $RELEASE_TAG" \
+            --notes-file dist/release-notes.md --draft
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --draft=false --latest

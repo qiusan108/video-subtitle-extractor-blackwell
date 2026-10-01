@@ -901,15 +901,17 @@ class SubtitleExtractor:
 
         with open(self.subtitle_output_path, mode='w', encoding='utf-8') as output:
             for index, (start_frame, end_frame, text) in enumerate(cues, 1):
-                # Segment ends are inclusive; SRT ends are exclusive.
+                # Scanner frames are 1-based and inclusive; timecode offsets
+                # are 0-based, with an exclusive end at the video duration.
+                start_offset = max(0, start_frame - 1)
                 end_exclusive = min(
-                    int(self.frame_count), max(start_frame + 1, end_frame + 1)
+                    int(self.frame_count), max(start_frame, end_frame)
                 )
                 output.write(
                     f'{index}\n'
-                    f'{self._frame_to_timecode(start_frame)} --> '
+                    f'{self._frame_to_timecode(start_offset)} --> '
                     f'{self._frame_to_timecode(end_exclusive)}\n'
-                    f'{text}\n'
+                    f'{text}\n\n'
                 )
         self.append_output(tr['Main']['SubLocation'].format(
             self.subtitle_output_path

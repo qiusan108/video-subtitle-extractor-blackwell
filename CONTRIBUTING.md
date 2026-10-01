@@ -1,6 +1,6 @@
 # Contributing
 
-感谢你帮助验证或改进 VSE Blackwell Edition。
+感谢你帮助验证或改进字幕工坊。
 
 提交问题时请附上：
 
